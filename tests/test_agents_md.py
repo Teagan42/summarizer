@@ -19,7 +19,8 @@ def test_agents_md_exists_and_mentions_uv_add():
     assert "project" in content_lower
 
 
-def test_agents_md_instructs_running_fix_and_format_commands():
+def test_agents_md_instructs_running_fix_format_and_python_commands():
     content = read_agents_content()
     assert "uv run ruff check --fix ." in content
-    assert "uv run format ." in content
+    assert "uv run ruff format ." in content
+    assert "uv run python" in content

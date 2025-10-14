@@ -13,7 +13,8 @@
 ## Quality and Testing Expectations
 - Pytest is the primary test runner; execute `uv run pytest` before submitting changes.
 - Linting is enforced via Ruff; run `uv run ruff check .` and `uv run ruff format --check .` to validate style.
-- Always run `uv run ruff check --fix .` and `uv run format .` before your final commit to ensure automated corrections are applied.
+- Always run `uv run ruff check --fix .` and `uv run ruff format .` before your final commit to ensure automated corrections are applied. These commands keep linting and formatting aligned with CI expectations.
+- When running ad-hoc Python scripts, use `uv run python <script> ...` so the managed virtual environment and locked dependencies are always active.
 - Preserve the TDD workflow: introduce a failing test, implement the fix, then refactor while keeping coverage strong.
 
 ## Repository Conventions
