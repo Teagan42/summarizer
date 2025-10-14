@@ -36,11 +36,14 @@ def compress(req: CompressRequest) -> CompressResponse:
     assert selector is not None
     assert compressor is not None
     texts = req.texts
+    default_keep_ratio = 0.4 if req.mode == "task" else 0.5
+    keep_ratio = req.keep_ratio if req.keep_ratio is not None else default_keep_ratio
+    lam = req.mmr_lambda if req.mmr_lambda is not None else settings.mmr_lambda
     indices, scores = selector.select(
         texts=texts,
         task=req.task,
-        keep_ratio=0.4 if req.mode == "task" else 0.5,
-        lam=settings.mmr_lambda,
+        keep_ratio=keep_ratio,
+        lam=lam,
     )
 
     selected_texts = [texts[index] for index in indices]
