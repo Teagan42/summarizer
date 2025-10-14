@@ -33,6 +33,29 @@ def test_selector_basic(selector):
     assert len(scores) == len(idxs)
 
 
+def test_selector_preserves_chronology(selector, monkeypatch):
+    texts = ["first", "second", "third"]
+
+    def fake_mmr(_embeddings, _task_embedding, *, k, lam):  # noqa: ARG001
+        assert k == 2
+        assert lam == 0.5
+        return [2, 0]
+
+    monkeypatch.setattr(selector, "mmr", fake_mmr)
+
+    indices, scores = selector.select(texts, task=None, keep_ratio=0.75, lam=0.5)
+
+    assert indices == [0, 2]
+    assert list(zip(indices, scores, strict=True)) == [
+        (0, pytest.approx(0.5773502691896257)),
+        (2, pytest.approx(0.5773502691896257)),
+    ]
+
+    from app.main import join_texts
+
+    assert join_texts(texts, indices) == "first\n\n---\n\nthird"
+
+
 def test_prompt_budget():
     from app.prompts import LOSSLESSISH_PROMPT
 
