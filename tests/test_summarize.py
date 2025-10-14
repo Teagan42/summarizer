@@ -11,9 +11,7 @@ def client():
 
 
 def test_summarize_returns_first_sentence(client):
-    payload = {
-        "text": "This is a test. This sentence provides additional information."
-    }
+    payload = {"text": "This is a test. This sentence provides additional information."}
 
     response = client.post("/summarize", json=payload)
 
@@ -23,12 +21,10 @@ def test_summarize_returns_first_sentence(client):
 
 
 def test_summarize_trims_closing_quote_after_sentence(client):
-    payload = {
-        "text": "He said \"Hello.\" Then he left."
-    }
+    payload = {"text": 'He said "Hello." Then he left.'}
 
     response = client.post("/summarize", json=payload)
 
     assert response.status_code == 200
     body = response.json()
-    assert body == {"summary": "He said \"Hello.\""}
+    assert body == {"summary": 'He said "Hello."'}

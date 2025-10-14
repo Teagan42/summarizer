@@ -1,0 +1,70 @@
+name: Lint, Format, Build, and Test (PR)
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - name: Install lint dependencies
+        run: uv pip install ruff
+      - name: Ruff lint
+        run: uv run ruff check .
+
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - name: Install format dependencies
+        run: uv pip install ruff
+      - name: Ruff format check
+        run: uv run ruff format --check .
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - name: Install build dependencies
+        run: uv pip install build
+      - name: Build package
+        run: uv run python -m build
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - name: Install test dependencies
+        run: uv pip install ".[dev]" pytest pytest-cov
+      - name: Pytest + coverage
+        run: |
+          uv run pytest \
+            --junitxml=pytest.xml \
+            --cov=summarizer \
+            --cov-report=term-missing:skip-covered \
+            --cov-report=xml:coverage.xml \
+            | tee pytest-coverage.txt
+      - name: Coverage comment
+        uses: MishaKav/pytest-coverage-comment@main
+        with:
+          pytest-coverage-path: pytest-coverage.txt
+          junitxml-path: pytest.xml
+          hide-comment: false
