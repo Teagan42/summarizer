@@ -40,6 +40,12 @@ class Compressor:
         else:
             raise ValueError(f"Unsupported backend: {self.backend}")
 
+    @staticmethod
+    def _clamp_budget(requested: int, maximum: int) -> int:
+        """Ensure per-request budgets stay within backend limits."""
+
+        return max(1, min(requested, maximum))
+
     def _prompt(self, content: str, task: str | None, budget: int, mode: str) -> str:
         if mode == "task" and task:
             return TASK_PROMPT.format(task=task, budget=budget, content=content)
@@ -49,11 +55,12 @@ class Compressor:
         prompt = self._prompt(content, task, budget, mode)
         if self.backend == "OPENAI":
             assert self.client is not None
+            max_tokens = self._clamp_budget(budget, settings.openai_max_tokens)
             body = {
                 "model": settings.openai_model,
                 "temperature": settings.openai_temperature,
                 "top_p": settings.openai_top_p,
-                "max_tokens": settings.openai_max_tokens,
+                "max_tokens": max_tokens,
                 "messages": [
                     {"role": "system", "content": "You are a deterministic context compressor."},
                     {"role": "user", "content": prompt},
@@ -65,9 +72,6 @@ class Compressor:
             return data["choices"][0]["message"]["content"].strip()
 
         assert self.pipe is not None
-        output: List[dict] = self.pipe(
-            prompt,
-            max_new_tokens=settings.hf_max_new_tokens,
-            do_sample=False,
-        )
+        max_new_tokens = self._clamp_budget(budget, settings.hf_max_new_tokens)
+        output: List[dict] = self.pipe(prompt, max_new_tokens=max_new_tokens, do_sample=False)
         return output[0]["generated_text"].strip()

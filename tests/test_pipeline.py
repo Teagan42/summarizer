@@ -37,3 +37,38 @@ def test_prompt_budget():
     prompt = LOSSLESSISH_PROMPT.format(budget=300, content="x")
 
     assert "≤ 300 tokens" in prompt or "<= 300 tokens" in prompt
+
+
+def test_compressor_respects_budget(monkeypatch):
+    from app import compression
+    from app.config import settings
+
+    calls = []
+
+    class DummyResponse:
+        def __init__(self, payload):
+            self._payload = payload
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"choices": [{"message": {"content": "ok"}}]}
+
+    class DummyClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def post(self, path, json):
+            calls.append(json)
+            return DummyResponse(json)
+
+    monkeypatch.setattr(compression.httpx, "Client", lambda *args, **kwargs: DummyClient(*args, **kwargs))
+
+    compressor = compression.Compressor()
+
+    compressor.compress(content="data", task=None, budget=100, mode="losslessish")
+    compressor.compress(content="data", task=None, budget=settings.openai_max_tokens + 500, mode="losslessish")
+
+    assert calls[0]["max_tokens"] == 100
+    assert calls[1]["max_tokens"] == settings.openai_max_tokens
