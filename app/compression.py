@@ -78,3 +78,8 @@ class Compressor:
             prompt, max_new_tokens=max_new_tokens, do_sample=False
         )
         return output[0]["generated_text"].strip()
+
+    def close(self) -> None:
+        if self.client is not None:
+            self.client.close()
+            self.client = None

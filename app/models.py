@@ -2,7 +2,7 @@
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class CompressRequest(BaseModel):
@@ -14,6 +14,18 @@ class CompressRequest(BaseModel):
     budget_tokens: int | None = 800
     return_selection: bool = False
 
+    @field_validator("texts", mode="before")
+    @classmethod
+    def _normalize_texts(cls, value: Any) -> list[str]:
+        if isinstance(value, str):
+            return [value]
+        if isinstance(value, list):
+            return [str(item) for item in value]
+        if value is None:
+            raise ValueError("texts must be provided")
+
+        return [str(value)]
+
 
 class CompressResponse(BaseModel):
     compressed: str
@@ -21,4 +33,5 @@ class CompressResponse(BaseModel):
     kept_count: int
     original_count: int
     selection_scores: list[float] | None = None
-    meta: dict[str, Any] = {}
+    kept_texts: list[str] | None = None
+    meta: dict[str, Any] = Field(default_factory=dict)
