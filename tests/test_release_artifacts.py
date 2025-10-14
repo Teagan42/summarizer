@@ -5,6 +5,8 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DOCKERFILE_PATH = REPO_ROOT / "Dockerfile"
 WORKFLOW_PATH = REPO_ROOT / ".github/workflows/release.yml"
+THIS_TEST_PATH = Path(__file__).resolve()
+ESCAPED_QUOTE = chr(92) + '"'
 
 
 @pytest.fixture(scope="module")
@@ -28,14 +30,19 @@ DOCKERFILE_TOKENS = [
     "RUN uv sync --frozen --no-dev",
     "COPY summarizer ./summarizer",
     "COPY tests ./tests",
-    "CMD [\"uvicorn\", \"summarizer.main:create_app\", \"--host\", \"0.0.0.0\", \"--port\", \"8000\"]",
+    'CMD ["uvicorn", "summarizer.main:create_app", "--host", "0.0.0.0", "--port", "8000"]',
 ]
 
 
 @pytest.mark.parametrize("token", DOCKERFILE_TOKENS)
 def test_dockerfile_contains_expected_tokens(token: str, dockerfile_content: str):
-    assert token in dockerfile_content, (
-        f"Expected to find '{token}' in Dockerfile"
+    assert token in dockerfile_content, f"Expected to find '{token}' in Dockerfile"
+
+
+def test_dockerfile_tokens_use_plain_quotes():
+    test_source = THIS_TEST_PATH.read_text(encoding="utf-8")
+    assert ESCAPED_QUOTE not in test_source, (
+        "Dockerfile token definitions should use plain quotes for readability"
     )
 
 
