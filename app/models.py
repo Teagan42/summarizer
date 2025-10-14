@@ -34,4 +34,4 @@ class CompressResponse(BaseModel):
     original_count: int
     selection_scores: list[float] | None = None
     kept_texts: list[str] | None = None
-    meta: dict[str, Any] = {}
+    meta: dict[str, Any] = Field(default_factory=dict)
