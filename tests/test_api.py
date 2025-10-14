@@ -10,8 +10,22 @@ class DummySelector:
 
 
 class DummyCompressor:
+    def __init__(self) -> None:
+        self.closed = False
+
     def compress(self, content, task, budget, mode):
         return "compressed result"
+
+    def close(self) -> None:
+        self.closed = True
+
+
+def test_dummy_compressor_exposes_close():
+    dummy = DummyCompressor()
+
+    dummy.close()
+
+    assert getattr(dummy, "closed", True) is True
 
 
 @pytest.fixture
@@ -21,7 +35,8 @@ def client(monkeypatch):
     monkeypatch.setattr(main, "selector", DummySelector())
     monkeypatch.setattr(main, "compressor", DummyCompressor())
 
-    return TestClient(main.app)
+    with TestClient(main.app) as client:
+        yield client
 
 
 def test_health(client):
@@ -66,6 +81,24 @@ def test_compress_endpoint_accepts_single_string(client):
     assert body["kept_indices"] == [0]
     assert body["kept_count"] == 1
     assert body["original_count"] == 1
+
+
+def test_shutdown_closes_compressor(monkeypatch):
+    from app import main
+
+    class TrackingCompressor(DummyCompressor):
+        def __init__(self) -> None:
+            super().__init__()
+
+    tracker = TrackingCompressor()
+
+    monkeypatch.setattr(main, "selector", DummySelector())
+    monkeypatch.setattr(main, "compressor", tracker)
+
+    with TestClient(main.app) as client:
+        client.get("/healthz")
+
+    assert tracker.closed is True
 
 
 def test_compress_endpoint_returns_kept_texts_when_requested(client):

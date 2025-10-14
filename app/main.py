@@ -9,12 +9,32 @@ from .models import CompressRequest, CompressResponse
 from .selection import Selector
 
 app = FastAPI(title="Context Compressor", version="0.1.0")
-selector = Selector(settings.embedding_model)
-compressor = Compressor()
+selector: Selector | None = None
+compressor: Compressor | None = None
+
+
+@app.on_event("startup")
+def startup() -> None:
+    global selector, compressor
+    if selector is None:
+        selector = Selector(settings.embedding_model)
+    if compressor is None:
+        compressor = Compressor()
+
+
+@app.on_event("shutdown")
+def shutdown() -> None:
+    global selector, compressor
+    if compressor is not None:
+        compressor.close()
+        compressor = None
+    selector = None
 
 
 @app.post("/compress", response_model=CompressResponse)
 def compress(req: CompressRequest) -> CompressResponse:
+    assert selector is not None
+    assert compressor is not None
     texts = req.texts
     indices, scores = selector.select(
         texts=texts,
