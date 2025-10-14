@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import List, Tuple
-
 import numpy as np
 
 try:
@@ -31,7 +29,7 @@ class Selector:
             SentenceTransformer(model_name) if SentenceTransformer is not None else None
         )
 
-    def embed(self, texts: List[str]) -> np.ndarray:
+    def embed(self, texts: list[str]) -> np.ndarray:
         if self.model is not None:
             return np.array(self.model.encode(texts, normalize_embeddings=True))
 
@@ -51,7 +49,7 @@ class Selector:
 
     def mmr(
         self, embeddings: np.ndarray, query_vec: np.ndarray, k: int, lam: float
-    ) -> List[int]:
+    ) -> list[int]:
         n = embeddings.shape[0]
         if k >= n:
             return list(range(n))
@@ -86,11 +84,11 @@ class Selector:
 
     def select(
         self,
-        texts: List[str],
+        texts: list[str],
         task: str | None,
         keep_ratio: float = 0.4,
         lam: float = 0.5,
-    ) -> Tuple[List[int], List[float]]:
+    ) -> tuple[list[int], list[float]]:
         embeddings = self.embed(texts)
         if embeddings.size == 0:
             return [], []
@@ -103,7 +101,7 @@ class Selector:
         k = max(1, int(len(texts) * keep_ratio))
         indices = self.mmr(embeddings, task_embedding, k=k, lam=lam)
         scores = _cosine_similarity(embeddings[indices], task_embedding).tolist()
-        paired = sorted(zip(indices, scores), key=lambda pair: pair[1], reverse=True)
+        paired = sorted(zip(indices, scores, strict=False), key=lambda pair: pair[1], reverse=True)
         sorted_indices = [idx for idx, _ in paired]
         sorted_scores = [score for _, score in paired]
         return sorted_indices, sorted_scores

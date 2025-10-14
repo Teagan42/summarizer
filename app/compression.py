@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-from typing import List
-
 import httpx
 
 from .config import settings
 from .prompts import LOSSLESSISH_PROMPT, TASK_PROMPT
 
 try:
-    from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
+    from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, pipeline
 except Exception:  # pragma: no cover - transformers is optional
     AutoTokenizer = AutoModelForSeq2SeqLM = pipeline = None  # type: ignore
 
@@ -76,7 +74,7 @@ class Compressor:
 
         assert self.pipe is not None
         max_new_tokens = self._clamp_budget(budget, settings.hf_max_new_tokens)
-        output: List[dict] = self.pipe(
+        output: list[dict] = self.pipe(
             prompt, max_new_tokens=max_new_tokens, do_sample=False
         )
         return output[0]["generated_text"].strip()

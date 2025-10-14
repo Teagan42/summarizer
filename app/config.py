@@ -1,7 +1,8 @@
 """Application configuration loaded from environment variables."""
 
-from pydantic import BaseModel, Field
 import os
+
+from pydantic import BaseModel, Field
 
 
 class Settings(BaseModel):

@@ -12,7 +12,7 @@ def selector(monkeypatch):
 
         def encode(self, texts, normalize_embeddings=True):
             embeddings = []
-            for idx, text in enumerate(texts):
+            for idx, _ in enumerate(texts):
                 vec = np.zeros(self._dim)
                 vec[idx % self._dim] = 1.0
                 if normalize_embeddings:
