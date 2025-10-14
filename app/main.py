@@ -13,11 +13,6 @@ selector = Selector(settings.embedding_model)
 compressor = Compressor()
 
 
-def join_texts(texts: list[str], indices: list[int]) -> str:
-    ordered = [texts[index] for index in indices]
-    return "\n\n---\n\n".join(ordered)
-
-
 @app.post("/compress", response_model=CompressResponse)
 def compress(req: CompressRequest) -> CompressResponse:
     texts = req.texts
@@ -28,7 +23,8 @@ def compress(req: CompressRequest) -> CompressResponse:
         lam=settings.mmr_lambda,
     )
 
-    selected_content = join_texts(texts, indices)
+    selected_texts = [texts[index] for index in indices]
+    selected_content = "\n\n---\n\n".join(selected_texts)
     compressed_text = compressor.compress(
         content=selected_content,
         task=req.task,
@@ -48,6 +44,7 @@ def compress(req: CompressRequest) -> CompressResponse:
         kept_count=len(indices),
         original_count=len(texts),
         selection_scores=scores if req.return_selection else None,
+        kept_texts=selected_texts if req.return_selection else None,
         meta={
             "backend": settings.compressor_backend,
             "model": settings.openai_model
