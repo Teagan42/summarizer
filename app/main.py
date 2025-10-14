@@ -6,16 +6,11 @@ from .compression import Compressor
 from .config import settings
 from .guards import ensure_code_blocks_closed, forbid_identifier_renames
 from .models import CompressRequest, CompressResponse
-from .selection import Selector
+from .selection import Selector, join_texts
 
 app = FastAPI(title="Context Compressor", version="0.1.0")
 selector = Selector(settings.embedding_model)
 compressor = Compressor()
-
-
-def join_texts(texts: list[str], indices: list[int]) -> str:
-    ordered = [texts[index] for index in indices]
-    return "\n\n---\n\n".join(ordered)
 
 
 @app.post("/compress", response_model=CompressResponse)

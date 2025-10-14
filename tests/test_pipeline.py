@@ -51,7 +51,7 @@ def test_selector_preserves_chronology(selector, monkeypatch):
         (2, pytest.approx(0.5773502691896257)),
     ]
 
-    from app.main import join_texts
+    from app.selection import join_texts
 
     assert join_texts(texts, indices) == "first\n\n---\n\nthird"
 

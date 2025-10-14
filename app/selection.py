@@ -111,3 +111,8 @@ class Selector:
         ordered_indices = [idx for idx, _score in sorted_pairs]
         ordered_scores = [score for _idx, score in sorted_pairs]
         return ordered_indices, ordered_scores
+
+
+def join_texts(texts: list[str], indices: list[int]) -> str:
+    """Assemble selected snippets in chronological order."""
+    return "\n\n---\n\n".join(texts[index] for index in indices)
