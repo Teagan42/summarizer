@@ -62,7 +62,10 @@ class Compressor:
                 "top_p": settings.openai_top_p,
                 "max_tokens": max_tokens,
                 "messages": [
-                    {"role": "system", "content": "You are a deterministic context compressor."},
+                    {
+                        "role": "system",
+                        "content": "You are a deterministic context compressor.",
+                    },
                     {"role": "user", "content": prompt},
                 ],
             }
@@ -73,5 +76,7 @@ class Compressor:
 
         assert self.pipe is not None
         max_new_tokens = self._clamp_budget(budget, settings.hf_max_new_tokens)
-        output: List[dict] = self.pipe(prompt, max_new_tokens=max_new_tokens, do_sample=False)
+        output: List[dict] = self.pipe(
+            prompt, max_new_tokens=max_new_tokens, do_sample=False
+        )
         return output[0]["generated_text"].strip()

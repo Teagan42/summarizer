@@ -51,7 +51,9 @@ def compress(req: CompressRequest) -> CompressResponse:
         selection_scores=scores if req.return_selection else None,
         meta={
             "backend": settings.compressor_backend,
-            "model": settings.openai_model if settings.compressor_backend == "OPENAI" else settings.hf_model,
+            "model": settings.openai_model
+            if settings.compressor_backend == "OPENAI"
+            else settings.hf_model,
         },
     )
 

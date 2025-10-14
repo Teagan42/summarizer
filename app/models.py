@@ -6,7 +6,9 @@ from typing import List, Optional, Literal, Dict, Any
 
 class CompressRequest(BaseModel):
     texts: List[str] = Field(..., description="List of text chunks to condense")
-    task: Optional[str] = Field(None, description="Task conditioning, e.g. 'assist coding on feature X'")
+    task: Optional[str] = Field(
+        None, description="Task conditioning, e.g. 'assist coding on feature X'"
+    )
     mode: Literal["losslessish", "task"] = "losslessish"
     budget_tokens: Optional[int] = 800
     return_selection: bool = False

@@ -25,7 +25,9 @@ def selector(monkeypatch):
 
 
 def test_selector_basic(selector):
-    idxs, scores = selector.select(["alpha", "beta", "gamma"], task="letters", keep_ratio=0.5, lam=0.5)
+    idxs, scores = selector.select(
+        ["alpha", "beta", "gamma"], task="letters", keep_ratio=0.5, lam=0.5
+    )
 
     assert 1 <= len(idxs) <= 3
     assert len(scores) == len(idxs)
@@ -63,12 +65,21 @@ def test_compressor_respects_budget(monkeypatch):
             calls.append(json)
             return DummyResponse(json)
 
-    monkeypatch.setattr(compression.httpx, "Client", lambda *args, **kwargs: DummyClient(*args, **kwargs))
+    monkeypatch.setattr(
+        compression.httpx,
+        "Client",
+        lambda *args, **kwargs: DummyClient(*args, **kwargs),
+    )
 
     compressor = compression.Compressor()
 
     compressor.compress(content="data", task=None, budget=100, mode="losslessish")
-    compressor.compress(content="data", task=None, budget=settings.openai_max_tokens + 500, mode="losslessish")
+    compressor.compress(
+        content="data",
+        task=None,
+        budget=settings.openai_max_tokens + 500,
+        mode="losslessish",
+    )
 
     assert calls[0]["max_tokens"] == 100
     assert calls[1]["max_tokens"] == settings.openai_max_tokens

@@ -27,7 +27,9 @@ class Selector:
 
     def __init__(self, model_name: str):
         self.model_name = model_name
-        self.model = SentenceTransformer(model_name) if SentenceTransformer is not None else None
+        self.model = (
+            SentenceTransformer(model_name) if SentenceTransformer is not None else None
+        )
 
     def embed(self, texts: List[str]) -> np.ndarray:
         if self.model is not None:
@@ -47,7 +49,9 @@ class Selector:
             vec /= norm
         return vec
 
-    def mmr(self, embeddings: np.ndarray, query_vec: np.ndarray, k: int, lam: float) -> List[int]:
+    def mmr(
+        self, embeddings: np.ndarray, query_vec: np.ndarray, k: int, lam: float
+    ) -> List[int]:
         n = embeddings.shape[0]
         if k >= n:
             return list(range(n))
@@ -67,7 +71,9 @@ class Selector:
                 relevance = sims_to_query[candidate]
                 if selected:
                     selected_matrix = embeddings[selected]
-                    diversity = _cosine_similarity(selected_matrix, embeddings[candidate]).max()
+                    diversity = _cosine_similarity(
+                        selected_matrix, embeddings[candidate]
+                    ).max()
                 else:
                     diversity = 0.0
                 score = lam * relevance - (1 - lam) * diversity
