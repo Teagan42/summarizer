@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Final
 
 import pytest
 
@@ -23,14 +24,13 @@ def test_dockerfile_exists():
     assert DOCKERFILE_PATH.exists(), "Dockerfile should exist at project root"
 
 
-DOCKERFILE_TOKENS = [
+DOCKERFILE_TOKENS: Final[list[str]] = [
     "FROM python:3.12-slim",
     "WORKDIR /app",
     "COPY pyproject.toml uv.lock ./",
     "RUN uv sync --frozen --no-dev",
-    "COPY summarizer ./summarizer",
-    "COPY tests ./tests",
-    'CMD ["uvicorn", "summarizer.main:create_app", "--host", "0.0.0.0", "--port", "8000"]',
+    "COPY app ./app",
+    'CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]',
 ]
 
 
@@ -50,7 +50,7 @@ def test_release_workflow_exists():
     assert WORKFLOW_PATH.exists(), "Release workflow should exist"
 
 
-RELEASE_WORKFLOW_TOKENS = [
+RELEASE_WORKFLOW_TOKENS: Final[list[str]] = [
     "on:\n  release:\n    types: [published]",
     "docker/build-push-action@v5",
     "GHCR_IMAGE=ghcr.io/${{ github.repository }}",
