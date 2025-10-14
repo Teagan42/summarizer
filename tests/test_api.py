@@ -3,7 +3,13 @@ from fastapi.testclient import TestClient
 
 
 class DummySelector:
+    def __init__(self) -> None:
+        self.keep_ratio_observed: float | None = None
+        self.lambda_observed: float | None = None
+
     def select(self, texts, task, keep_ratio, lam):
+        self.keep_ratio_observed = keep_ratio
+        self.lambda_observed = lam
         indices = list(range(min(len(texts), 2)))
         scores = [0.9, 0.8][: len(indices)]
         return indices, scores
@@ -37,6 +43,18 @@ def client(monkeypatch):
 
     with TestClient(main.app) as client:
         yield client
+
+
+@pytest.fixture
+def client_with_selector(monkeypatch):
+    from app import main
+
+    selector = DummySelector()
+    monkeypatch.setattr(main, "selector", selector)
+    monkeypatch.setattr(main, "compressor", DummyCompressor())
+
+    with TestClient(main.app) as client:
+        yield client, selector
 
 
 def test_health(client):
@@ -146,3 +164,25 @@ def test_compress_endpoint_rejects_mmr_lambda_out_of_range(client):
     response = client.post("/compress", json=payload)
 
     assert response.status_code == 422
+
+
+def test_compress_endpoint_passes_selection_hyperparams(client_with_selector):
+    client, selector = client_with_selector
+    payload = {
+        "texts": [
+            "Function A does X",
+            "Function B depends on A",
+            "Random chit-chat",
+        ],
+        "task": "summarize dependencies for refactor",
+        "mode": "task",
+        "budget_tokens": 200,
+        "keep_ratio": 0.42,
+        "mmr_lambda": 0.17,
+    }
+
+    response = client.post("/compress", json=payload)
+
+    assert response.status_code == 200
+    assert selector.keep_ratio_observed == pytest.approx(0.42)
+    assert selector.lambda_observed == pytest.approx(0.17)
