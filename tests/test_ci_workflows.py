@@ -2,7 +2,6 @@ from pathlib import Path
 
 import pytest
 
-
 WORKFLOW_PATH = Path(".github/workflows/ci.yaml")
 
 
