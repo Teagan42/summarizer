@@ -13,6 +13,18 @@ class CompressRequest(BaseModel):
     mode: Literal["losslessish", "task"] = "losslessish"
     budget_tokens: int | None = 800
     return_selection: bool = False
+    keep_ratio: float | None = Field(
+        default=None,
+        gt=0.0,
+        le=1.0,
+        description="Fraction of texts to retain during selection",
+    )
+    mmr_lambda: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description="MMR trade-off between relevance and diversity",
+    )
 
     @field_validator("texts", mode="before")
     @classmethod

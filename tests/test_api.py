@@ -122,3 +122,27 @@ def test_compress_endpoint_returns_kept_texts_when_requested(client):
         "Function A does X",
         "Function B depends on A",
     ]
+
+
+def test_compress_endpoint_rejects_keep_ratio_out_of_range(client):
+    payload = {
+        "texts": ["Function A does X", "Function B depends on A"],
+        "mode": "losslessish",
+        "keep_ratio": 1.5,
+    }
+
+    response = client.post("/compress", json=payload)
+
+    assert response.status_code == 422
+
+
+def test_compress_endpoint_rejects_mmr_lambda_out_of_range(client):
+    payload = {
+        "texts": ["Function A does X", "Function B depends on A"],
+        "mode": "losslessish",
+        "mmr_lambda": -0.1,
+    }
+
+    response = client.post("/compress", json=payload)
+
+    assert response.status_code == 422
