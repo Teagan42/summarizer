@@ -102,7 +102,11 @@ class Selector:
         indices = self.mmr(embeddings, task_embedding, k=k, lam=lam)
         scores = _cosine_similarity(embeddings[indices], task_embedding).tolist()
 
-        index_to_score = dict(zip(indices, scores, strict=False))
-        ordered_indices = sorted(index_to_score)
-        ordered_scores = [index_to_score[idx] for idx in ordered_indices]
+        sorted_pairs = sorted(
+            zip(indices, scores, strict=False), key=lambda pair: pair[0]
+        )
+        if not sorted_pairs:
+            return [], []
+
+        ordered_indices, ordered_scores = map(list, zip(*sorted_pairs, strict=False))
         return ordered_indices, ordered_scores

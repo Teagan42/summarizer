@@ -56,6 +56,23 @@ def test_selector_preserves_chronology(selector, monkeypatch):
     assert join_texts(texts, indices) == "first\n\n---\n\nthird"
 
 
+def test_selector_keeps_duplicate_indices(selector, monkeypatch):
+    texts = ["alpha", "beta", "gamma"]
+
+    def fake_mmr(_embeddings, _task_embedding, *, k, lam):  # noqa: ARG001
+        assert k == 2
+        assert lam == 0.5
+        return [1, 1]
+
+    monkeypatch.setattr(selector, "mmr", fake_mmr)
+
+    indices, scores = selector.select(texts, task=None, keep_ratio=0.75, lam=0.5)
+
+    assert indices == [1, 1]
+    assert len(scores) == 2
+    assert all(score == pytest.approx(scores[0]) for score in scores)
+
+
 def test_prompt_budget():
     from app.prompts import LOSSLESSISH_PROMPT
 
