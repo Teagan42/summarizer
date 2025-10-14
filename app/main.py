@@ -1,6 +1,5 @@
 """FastAPI entrypoint for the context compressor."""
 
-
 from fastapi import FastAPI
 
 from .compression import Compressor

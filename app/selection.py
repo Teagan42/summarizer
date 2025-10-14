@@ -101,7 +101,9 @@ class Selector:
         k = max(1, int(len(texts) * keep_ratio))
         indices = self.mmr(embeddings, task_embedding, k=k, lam=lam)
         scores = _cosine_similarity(embeddings[indices], task_embedding).tolist()
-        paired = sorted(zip(indices, scores, strict=False), key=lambda pair: pair[1], reverse=True)
+        paired = sorted(
+            zip(indices, scores, strict=False), key=lambda pair: pair[1], reverse=True
+        )
         sorted_indices = [idx for idx, _ in paired]
         sorted_scores = [score for _, score in paired]
         return sorted_indices, sorted_scores
