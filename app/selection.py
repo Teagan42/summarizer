@@ -103,10 +103,11 @@ class Selector:
         scores = _cosine_similarity(embeddings[indices], task_embedding).tolist()
 
         sorted_pairs = sorted(
-            zip(indices, scores, strict=False), key=lambda pair: pair[0]
+            zip(indices, scores, strict=True), key=lambda pair: pair[0]
         )
         if not sorted_pairs:
             return [], []
 
-        ordered_indices, ordered_scores = map(list, zip(*sorted_pairs, strict=False))
+        ordered_indices = [idx for idx, _score in sorted_pairs]
+        ordered_scores = [score for _idx, score in sorted_pairs]
         return ordered_indices, ordered_scores

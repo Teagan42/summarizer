@@ -73,6 +73,25 @@ def test_selector_keeps_duplicate_indices(selector, monkeypatch):
     assert all(score == pytest.approx(scores[0]) for score in scores)
 
 
+def test_selector_raises_on_score_length_mismatch(selector, monkeypatch):
+    texts = ["first", "second", "third"]
+
+    def fake_mmr(_embeddings, _task_embedding, *, k, lam):  # noqa: ARG001
+        return [0, 1]
+
+    monkeypatch.setattr(selector, "mmr", fake_mmr)
+
+    from app import selection
+
+    def fake_cosine_similarity(_matrix, _vector):
+        return np.array([0.123])
+
+    monkeypatch.setattr(selection, "_cosine_similarity", fake_cosine_similarity)
+
+    with pytest.raises(ValueError):
+        selector.select(texts, task=None, keep_ratio=0.75, lam=0.5)
+
+
 def test_prompt_budget():
     from app.prompts import LOSSLESSISH_PROMPT
 
