@@ -21,18 +21,18 @@ def test_dockerfile_exists():
     assert DOCKERFILE_PATH.exists(), "Dockerfile should exist at project root"
 
 
-@pytest.mark.parametrize(
-    "token",
-    [
-        "FROM python:3.12-slim",
-        "WORKDIR /app",
-        "COPY pyproject.toml uv.lock ./",
-        "RUN uv sync --frozen --no-dev",
-        "COPY summarizer ./summarizer",
-        "COPY tests ./tests",
-        "CMD [\"uvicorn\", \"summarizer.main:create_app\", \"--host\", \"0.0.0.0\", \"--port\", \"8000\"]",
-    ],
-)
+DOCKERFILE_TOKENS = [
+    "FROM python:3.12-slim",
+    "WORKDIR /app",
+    "COPY pyproject.toml uv.lock ./",
+    "RUN uv sync --frozen --no-dev",
+    "COPY summarizer ./summarizer",
+    "COPY tests ./tests",
+    "CMD [\"uvicorn\", \"summarizer.main:create_app\", \"--host\", \"0.0.0.0\", \"--port\", \"8000\"]",
+]
+
+
+@pytest.mark.parametrize("token", DOCKERFILE_TOKENS)
 def test_dockerfile_contains_expected_tokens(token: str, dockerfile_content: str):
     assert token in dockerfile_content, (
         f"Expected to find '{token}' in Dockerfile"
@@ -43,17 +43,22 @@ def test_release_workflow_exists():
     assert WORKFLOW_PATH.exists(), "Release workflow should exist"
 
 
-@pytest.mark.parametrize(
-    "token",
-    [
-        "on:\n  release:\n    types: [published]",
-        "docker/build-push-action@v5",
-        "GHCR_IMAGE=ghcr.io/${{ github.repository }}",
-        "tags: ${{ env.GHCR_IMAGE }}:${{ github.ref_name }}",
-        "cache-from: type=gha",
-        "cache-to: type=gha,mode=max",
-    ],
-)
+RELEASE_WORKFLOW_TOKENS = [
+    "on:\n  release:\n    types: [published]",
+    "docker/build-push-action@v5",
+    "GHCR_IMAGE=ghcr.io/${{ github.repository }}",
+    "tags: ${{ env.GHCR_IMAGE }}:${{ github.ref_name }}",
+    "cache-from: type=gha",
+    "cache-to: type=gha,mode=max",
+    "- name: Generate artifact attestation",
+    "uses: actions/attest-build-provenance@v2",
+    "subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}",
+    "subject-digest: ${{ steps.push.outputs.digest }}",
+    "push-to-registry: true",
+]
+
+
+@pytest.mark.parametrize("token", RELEASE_WORKFLOW_TOKENS)
 def test_release_workflow_contains_expected_tokens(
     token: str, release_workflow_content: str
 ):
