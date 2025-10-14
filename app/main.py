@@ -20,7 +20,7 @@ def join_texts(texts: list[str], indices: list[int]) -> str:
 
 @app.post("/compress", response_model=CompressResponse)
 def compress(req: CompressRequest) -> CompressResponse:
-    texts = req.texts if isinstance(req.texts, list) else [str(req.texts)]
+    texts = req.texts
     indices, scores = selector.select(
         texts=texts,
         task=req.task,
