@@ -16,6 +16,8 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
+      - name: Create virtual environment
+        run: uv venv
       - name: Install lint dependencies
         run: uv pip install ruff
       - name: Ruff lint
@@ -28,6 +30,8 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
+      - name: Create virtual environment
+        run: uv venv
       - name: Install format dependencies
         run: uv pip install ruff
       - name: Ruff format check
@@ -40,6 +44,8 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
+      - name: Create virtual environment
+        run: uv venv
       - name: Install build dependencies
         run: uv pip install build
       - name: Build package
@@ -52,6 +58,8 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
+      - name: Create virtual environment
+        run: uv venv
       - name: Install test dependencies
         run: uv pip install ".[dev]" pytest pytest-cov
       - name: Pytest + coverage

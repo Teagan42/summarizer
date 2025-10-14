@@ -25,6 +25,7 @@ def test_ci_workflow_exists():
         "test:",
         "Coverage comment",
         "pytest-coverage-comment",
+        "uv venv",
     ],
 )
 def test_ci_workflow_contains_expected_tokens(token, workflow_content: str):
