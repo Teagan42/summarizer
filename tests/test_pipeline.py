@@ -1,6 +1,8 @@
 import numpy as np
 import pytest
 
+from app.selection import _cosine_similarity
+
 
 @pytest.fixture
 def selector(monkeypatch):
@@ -31,6 +33,26 @@ def test_selector_basic(selector):
 
     assert 1 <= len(idxs) <= 3
     assert len(scores) == len(idxs)
+
+
+def test_selector_preserves_document_order(selector, monkeypatch):
+    texts = ["first", "second", "third", "fourth"]
+
+    monkeypatch.setattr(
+        selector,
+        "mmr",
+        lambda embeddings, query_vec, k, lam: [3, 1, 2],
+    )
+
+    indices, scores = selector.select(texts, task=None, keep_ratio=0.75, lam=0.5)
+
+    assert indices == [1, 2, 3]
+
+    embeddings = selector.embed(texts)
+    query_vec = embeddings.mean(axis=0)
+    expected_scores = _cosine_similarity(embeddings[indices], query_vec).tolist()
+
+    assert scores == expected_scores
 
 
 def test_prompt_budget():
