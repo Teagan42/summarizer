@@ -6,10 +6,12 @@ class DummySelector:
     def __init__(self) -> None:
         self.keep_ratio_observed: float | None = None
         self.lambda_observed: float | None = None
+        self.selection_kwargs: dict[str, float] | None = None
 
     def select(self, texts, task, keep_ratio, lam):
         self.keep_ratio_observed = keep_ratio
         self.lambda_observed = lam
+        self.selection_kwargs = {"keep_ratio": keep_ratio, "lam": lam}
         indices = list(range(min(len(texts), 2)))
         scores = [0.9, 0.8][: len(indices)]
         return indices, scores
@@ -168,6 +170,8 @@ def test_compress_endpoint_rejects_mmr_lambda_out_of_range(client):
 
 def test_compress_endpoint_passes_selection_hyperparams(client_with_selector):
     client, selector = client_with_selector
+    keep_ratio = 0.42
+    mmr_lambda = 0.17
     payload = {
         "texts": [
             "Function A does X",
@@ -177,12 +181,37 @@ def test_compress_endpoint_passes_selection_hyperparams(client_with_selector):
         "task": "summarize dependencies for refactor",
         "mode": "task",
         "budget_tokens": 200,
-        "keep_ratio": 0.42,
-        "mmr_lambda": 0.17,
+        "keep_ratio": keep_ratio,
+        "mmr_lambda": mmr_lambda,
     }
 
     response = client.post("/compress", json=payload)
 
     assert response.status_code == 200
-    assert selector.keep_ratio_observed == pytest.approx(0.42)
-    assert selector.lambda_observed == pytest.approx(0.17)
+    assert selector.keep_ratio_observed == pytest.approx(keep_ratio)
+    assert selector.lambda_observed == pytest.approx(mmr_lambda)
+
+
+def test_compress_endpoint_records_explicit_selection_hyperparams(client_with_selector):
+    client, selector = client_with_selector
+    keep_ratio = 0.12
+    mmr_lambda = 0.34
+    payload = {
+        "texts": [
+            "Function A does X",
+            "Function B depends on A",
+            "Random chit-chat",
+        ],
+        "task": "summarize dependencies for refactor",
+        "mode": "task",
+        "budget_tokens": 200,
+        "keep_ratio": keep_ratio,
+        "mmr_lambda": mmr_lambda,
+    }
+
+    response = client.post("/compress", json=payload)
+
+    assert response.status_code == 200
+    assert selector.selection_kwargs is not None
+    assert selector.selection_kwargs["keep_ratio"] == pytest.approx(keep_ratio)
+    assert selector.selection_kwargs["lam"] == pytest.approx(mmr_lambda)
