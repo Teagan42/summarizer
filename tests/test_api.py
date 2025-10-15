@@ -20,8 +20,10 @@ class DummySelector:
 class DummyCompressor:
     def __init__(self) -> None:
         self.closed = False
+        self.budget_observed: int | None = None
 
     def compress(self, content, task, budget, mode):
+        self.budget_observed = budget
         return "compressed result"
 
     def close(self) -> None:
@@ -45,6 +47,18 @@ def client(monkeypatch):
 
     with TestClient(main.app) as client:
         yield client
+
+
+@pytest.fixture
+def client_and_compressor(monkeypatch):
+    from app import main
+
+    monkeypatch.setattr(main, "selector", DummySelector())
+    compressor = DummyCompressor()
+    monkeypatch.setattr(main, "compressor", compressor)
+
+    with TestClient(main.app) as client:
+        yield client, compressor
 
 
 @pytest.fixture
@@ -142,6 +156,23 @@ def test_compress_endpoint_returns_kept_texts_when_requested(client):
         "Function A does X",
         "Function B depends on A",
     ]
+
+
+def test_compress_endpoint_honors_zero_budget(client_and_compressor):
+    client, compressor = client_and_compressor
+    payload = {
+        "texts": [
+            "Function A does X",
+            "Function B depends on A",
+        ],
+        "mode": "losslessish",
+        "budget_tokens": 0,
+    }
+
+    response = client.post("/compress", json=payload)
+
+    assert response.status_code == 200
+    assert compressor.budget_observed == 0
 
 
 def test_compress_endpoint_rejects_keep_ratio_out_of_range(client):

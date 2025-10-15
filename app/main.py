@@ -51,7 +51,7 @@ def compress(req: CompressRequest) -> CompressResponse:
     compressed_text = compressor.compress(
         content=selected_content,
         task=req.task,
-        budget=req.budget_tokens or 800,
+        budget=req.budget_tokens if req.budget_tokens is not None else 800,
         mode=req.mode,
     )
 
