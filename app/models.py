@@ -11,7 +11,7 @@ class CompressRequest(BaseModel):
         None, description="Task conditioning, e.g. 'assist coding on feature X'"
     )
     mode: Literal["losslessish", "task"] = "losslessish"
-    budget_tokens: int | None = 800
+    budget_tokens: int | None = Field(default=800, ge=0)
     return_selection: bool = False
     keep_ratio: float | None = Field(
         default=None,
