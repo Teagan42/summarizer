@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from string import Formatter
+from string import Formatter, Template
 
 import httpx
 
@@ -50,18 +50,21 @@ class Compressor:
 
     @classmethod
     def _fill_prompt(cls, template: str, **values: object) -> str:
-        parts: list[str] = []
-        for literal, field_name, format_spec, conversion in cls._formatter.parse(
+        substitutions: dict[str, str] = {}
+        template_parts: list[str] = []
+        for _literal, field_name, format_spec, conversion in cls._formatter.parse(
             template
         ):
-            parts.append(literal)
+            template_parts.append(_literal)
             if field_name is None:
                 continue
             if format_spec or conversion:
                 raise ValueError("Prompt placeholders must not use format specifiers")
             value = values[field_name]
-            parts.append("" if value is None else str(value))
-        return "".join(parts)
+            substitutions[field_name] = "" if value is None else str(value)
+            template_parts.append(f"${{{field_name}}}")
+        placeholder_template = "".join(template_parts)
+        return Template(placeholder_template).safe_substitute(substitutions)
 
     def _prompt(self, content: str, task: str | None, budget: int, mode: str) -> str:
         substitutions: dict[str, object] = {"budget": budget, "content": content}

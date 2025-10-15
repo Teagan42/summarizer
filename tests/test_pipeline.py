@@ -118,3 +118,41 @@ def test_compressor_prompt_preserves_braces():
 
     assert task in prompt
     assert content in prompt
+
+
+def test_compressor_compress_preserves_braces(monkeypatch):
+    from app import compression
+
+    captured = {}
+
+    class DummyResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"choices": [{"message": {"content": "ok"}}]}
+
+    class DummyClient:
+        def __init__(self, *args, **kwargs):
+            captured["init"] = {"args": args, "kwargs": kwargs}
+
+        def post(self, path, json):
+            captured["request"] = {"path": path, "json": json}
+            return DummyResponse()
+
+    monkeypatch.setattr(
+        compression, "httpx", type("DummyHTTPX", (), {"Client": DummyClient})
+    )
+
+    compressor = compression.Compressor()
+
+    task = '{"objective": "compress"}'
+    content = '{"data": {"value": 1}}'
+
+    result = compressor.compress(content=content, task=task, budget=42, mode="task")
+
+    assert result == "ok"
+    request = captured["request"]
+    prompt = request["json"]["messages"][1]["content"]
+    assert task in prompt
+    assert content in prompt
