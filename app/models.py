@@ -2,11 +2,19 @@
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class CompressRequest(BaseModel):
-    texts: list[str] = Field(..., description="List of text chunks to condense")
+    texts: list[str] | None = Field(
+        default=None, description="List of text chunks to condense"
+    )
+    document: str | None = Field(
+        default=None,
+        description=(
+            "Raw document to segment before selection; overrides `texts` when provided"
+        ),
+    )
     task: str | None = Field(
         None, description="Task conditioning, e.g. 'assist coding on feature X'"
     )
@@ -28,15 +36,22 @@ class CompressRequest(BaseModel):
 
     @field_validator("texts", mode="before")
     @classmethod
-    def _normalize_texts(cls, value: Any) -> list[str]:
+    def _normalize_texts(cls, value: Any) -> list[str] | None:
+        if value is None:
+            return None
         if isinstance(value, str):
             return [value]
         if isinstance(value, list):
             return [str(item) for item in value]
-        if value is None:
-            raise ValueError("texts must be provided")
 
         return [str(value)]
+
+    @model_validator(mode="after")
+    @classmethod
+    def _ensure_payload(cls, values: "CompressRequest") -> "CompressRequest":
+        if values.texts is None and values.document is None:
+            raise ValueError("either texts or document must be provided")
+        return values
 
 
 class CompressResponse(BaseModel):

@@ -2,6 +2,7 @@
 
 from fastapi import FastAPI
 
+from .chunking import chunk_text
 from .compression import Compressor
 from .config import settings
 from .guards import ensure_code_blocks_closed, forbid_identifier_renames
@@ -35,7 +36,14 @@ def shutdown() -> None:
 def compress(req: CompressRequest) -> CompressResponse:
     assert selector is not None
     assert compressor is not None
-    texts = req.texts
+    if req.document is not None:
+        texts = chunk_text(
+            req.document,
+            settings.chunk_target_tokens,
+            settings.chunk_overlap_tokens,
+        )
+    else:
+        texts = req.texts or []
     default_keep_ratio = 0.4 if req.mode == "task" else 0.5
     keep_ratio = req.keep_ratio if req.keep_ratio is not None else default_keep_ratio
     lam = req.mmr_lambda if req.mmr_lambda is not None else settings.mmr_lambda
