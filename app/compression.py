@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from string import Formatter
+
 import httpx
 
 from .config import settings
@@ -15,6 +17,8 @@ except Exception:  # pragma: no cover - transformers is optional
 
 class Compressor:
     """Delegate compression to an OpenAI-compatible or HF backend."""
+
+    _formatter = Formatter()
 
     def __init__(self) -> None:
         self.backend = settings.compressor_backend
@@ -44,10 +48,28 @@ class Compressor:
 
         return max(1, min(requested, maximum))
 
+    @classmethod
+    def _fill_prompt(cls, template: str, **values: object) -> str:
+        parts: list[str] = []
+        for literal, field_name, format_spec, conversion in cls._formatter.parse(
+            template
+        ):
+            parts.append(literal)
+            if field_name is None:
+                continue
+            if format_spec or conversion:
+                raise ValueError("Prompt placeholders must not use format specifiers")
+            value = values[field_name]
+            parts.append("" if value is None else str(value))
+        return "".join(parts)
+
     def _prompt(self, content: str, task: str | None, budget: int, mode: str) -> str:
+        substitutions: dict[str, object] = {"budget": budget, "content": content}
+        template = LOSSLESSISH_PROMPT
         if mode == "task" and task:
-            return TASK_PROMPT.format(task=task, budget=budget, content=content)
-        return LOSSLESSISH_PROMPT.format(budget=budget, content=content)
+            template = TASK_PROMPT
+            substitutions["task"] = task
+        return self._fill_prompt(template, **substitutions)
 
     def compress(self, content: str, task: str | None, budget: int, mode: str) -> str:
         prompt = self._prompt(content, task, budget, mode)

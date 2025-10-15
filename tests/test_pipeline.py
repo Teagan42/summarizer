@@ -105,3 +105,16 @@ def test_compressor_respects_budget(monkeypatch):
 
     assert calls[0]["max_tokens"] == 100
     assert calls[1]["max_tokens"] == settings.openai_max_tokens
+
+
+def test_compressor_prompt_preserves_braces():
+    from app import compression
+
+    compressor = compression.Compressor.__new__(compression.Compressor)
+    task = '{"objective": "compress"}'
+    content = '{"data": {"value": 1}}'
+
+    prompt = compressor._prompt(content=content, task=task, budget=42, mode="task")
+
+    assert task in prompt
+    assert content in prompt
