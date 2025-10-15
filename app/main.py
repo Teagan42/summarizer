@@ -6,6 +6,7 @@ from .chunking import chunk_text
 from .compression import Compressor
 from .config import settings
 from .guards import ensure_code_blocks_closed, forbid_identifier_renames
+from .metrics import metrics
 from .models import CompressRequest, CompressResponse
 from .selection import Selector
 
@@ -47,21 +48,37 @@ def compress(req: CompressRequest) -> CompressResponse:
     default_keep_ratio = 0.4 if req.mode == "task" else 0.5
     keep_ratio = req.keep_ratio if req.keep_ratio is not None else default_keep_ratio
     lam = req.mmr_lambda if req.mmr_lambda is not None else settings.mmr_lambda
-    indices, scores = selector.select(
-        texts=texts,
-        task=req.task,
-        keep_ratio=keep_ratio,
-        lam=lam,
-    )
+    backend = settings.compressor_backend
+    model = settings.openai_model if backend == "OPENAI" else settings.hf_model
+    telemetry_context = {
+        "mode": req.mode,
+        "keep_ratio": keep_ratio,
+        "backend": backend,
+        "model": model,
+    }
+    with metrics.timer(
+        "select",
+        **telemetry_context,
+    ):
+        indices, scores = selector.select(
+            texts=texts,
+            task=req.task,
+            keep_ratio=keep_ratio,
+            lam=lam,
+        )
 
     selected_texts = [texts[index] for index in indices]
     selected_content = "\n\n---\n\n".join(selected_texts)
-    compressed_text = compressor.compress(
-        content=selected_content,
-        task=req.task,
-        budget=req.budget_tokens if req.budget_tokens is not None else 800,
-        mode=req.mode,
-    )
+    with metrics.timer(
+        "compress",
+        **telemetry_context,
+    ):
+        compressed_text = compressor.compress(
+            content=selected_content,
+            task=req.task,
+            budget=req.budget_tokens if req.budget_tokens is not None else 800,
+            mode=req.mode,
+        )
 
     compressed_text = ensure_code_blocks_closed(compressed_text)
     try:

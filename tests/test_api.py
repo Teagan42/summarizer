@@ -73,6 +73,38 @@ def client_with_selector(monkeypatch):
         yield client, selector
 
 
+@pytest.fixture
+def metrics_recorder(monkeypatch):
+    from app import main
+
+    events: list[dict[str, object]] = []
+
+    def record(event: dict[str, object]) -> None:
+        events.append(event)
+
+    main.metrics.set_sink(record)
+
+    try:
+        yield events
+    finally:
+        main.metrics.reset_sink()
+
+
+@pytest.fixture
+def metrics_error_sink(monkeypatch):
+    from app import main
+
+    def raise_error(_: dict[str, object]) -> None:
+        raise RuntimeError("sink failure")
+
+    main.metrics.set_sink(raise_error)
+
+    try:
+        yield
+    finally:
+        main.metrics.reset_sink()
+
+
 def test_health(client):
     response = client.get("/healthz")
 
@@ -115,6 +147,37 @@ def test_compress_endpoint_accepts_single_string(client):
     assert body["kept_indices"] == [0]
     assert body["kept_count"] == 1
     assert body["original_count"] == 1
+
+
+def test_compress_endpoint_emits_metrics_events(client, metrics_recorder):
+    payload = {
+        "texts": ["Function A does X", "Function B depends on A", "Random chit-chat"],
+        "task": "summarize dependencies for refactor",
+        "mode": "task",
+        "budget_tokens": 200,
+    }
+
+    response = client.post("/compress", json=payload)
+
+    assert response.status_code == 200
+    stages = [event["stage"] for event in metrics_recorder]
+    assert stages == ["select", "compress"]
+    for event in metrics_recorder:
+        assert event["mode"] == "task"
+        assert event["keep_ratio"] == pytest.approx(0.4)
+        assert event["backend"] == "OPENAI"
+        assert event["model"]
+        assert event["duration_ms"] >= 0
+
+
+def test_compress_endpoint_propagates_metrics_errors(client, metrics_error_sink):
+    payload = {
+        "texts": ["Function A does X", "Function B depends on A"],
+        "mode": "task",
+    }
+
+    with pytest.raises(RuntimeError, match="sink failure"):
+        client.post("/compress", json=payload)
 
 
 def test_shutdown_closes_compressor(monkeypatch):

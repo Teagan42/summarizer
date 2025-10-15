@@ -34,3 +34,31 @@ Chunking behavior is controlled through environment variables surfaced in
 Tune these values to trade off selection granularity against request size. The
 service will fall back to whitespace segmentation when tokenizer libraries are
 unavailable.
+
+## Telemetry and monitoring
+
+The service emits lightweight telemetry events for the selection and
+compression stages. Each event includes:
+
+- `stage`: Either `select` or `compress`.
+- `duration_ms`: Wall-clock runtime for the stage.
+- `status`: `ok` when the stage completed successfully, `error` when it raised.
+- `mode` and `keep_ratio`: Effective request settings after defaults applied.
+- `backend` and `model`: Identifier for the active compression backend.
+
+Events are delivered to a sink exposed via `app.metrics.metrics`. By default
+they are logged using the standard library logger under `app.metrics`. Replace
+the sink with your monitoring pipeline by calling `metrics.set_sink` during
+startup:
+
+```python
+from app.metrics import metrics
+
+
+def startup() -> None:
+    metrics.set_sink(lambda event: send_to_datadog("summarizer.telemetry", event))
+```
+
+If the sink raises an exception the request will fail, which keeps telemetry
+failures visible in upstream alerting. Use `metrics.reset_sink()` to restore the
+default logging behavior during tests or graceful shutdown.
