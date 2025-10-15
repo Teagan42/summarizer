@@ -199,6 +199,47 @@ def test_compress_endpoint_rejects_mmr_lambda_out_of_range(client):
     assert response.status_code == 422
 
 
+def test_chunker_splits_long_input(monkeypatch):
+    from app import main
+    from app.config import settings
+
+    class TrackingSelector(DummySelector):
+        def __init__(self) -> None:
+            super().__init__()
+            self.texts_observed: list[str] | None = None
+
+        def select(self, texts, task, keep_ratio, lam):
+            self.texts_observed = list(texts)
+            return super().select(texts, task, keep_ratio, lam)
+
+    monkeypatch.setattr(settings, "chunk_target_tokens", 5)
+    monkeypatch.setattr(settings, "chunk_overlap_tokens", 2)
+
+    selector = TrackingSelector()
+    monkeypatch.setattr(main, "selector", selector)
+    monkeypatch.setattr(main, "compressor", DummyCompressor())
+
+    document = " ".join(f"word{i}" for i in range(1, 13))
+
+    with TestClient(main.app) as client:
+        response = client.post(
+            "/compress",
+            json={
+                "document": document,
+                "mode": "task",
+            },
+        )
+
+    assert response.status_code == 200
+    assert selector.texts_observed is not None
+    assert selector.texts_observed == [
+        "word1 word2 word3 word4 word5",
+        "word4 word5 word6 word7 word8",
+        "word7 word8 word9 word10 word11",
+        "word10 word11 word12",
+    ]
+
+
 def test_compress_endpoint_passes_selection_hyperparams(client_with_selector):
     client, selector = client_with_selector
     keep_ratio = 0.42
